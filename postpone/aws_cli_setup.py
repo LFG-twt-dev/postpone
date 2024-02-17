@@ -50,7 +50,9 @@ def install_aws_cli():
         subprocess.run(install_cmd, shell=True, check=True)
 
     elif os.name == 'nt':
-        install_cmd = "msiexec.exe /i https://awscli.amazonaws.com/AWSCLIV2.msi"
+        download_url = "https://awscli.amazonaws.com/AWSCLIV2.msi"
+        install_cmd = "msiexec.exe /i AWSCLIV2.msi"
+        subprocess.run(f"curl '{download_url}' -o 'AWSCLIV2.msi'", shell=True, check=True)
         subprocess.run(install_cmd, shell=True, check=True)
     else:
         raise ValueError("Unsupported operating system")
@@ -79,5 +81,29 @@ def configure_aws():
     subprocess.run(f"aws iam create-role --role-name {role_uuid} --assume-role-policy-document '{policy_string}'", shell=True)
     subprocess.run(f"aws iam attach-role-policy --role-name {role_uuid}  --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole", shell=True)
 
+# Function to create a new Lambda function
+def create_lambda_function(function_name, zip_file_location, handler, runtime, role_arn):
+    subprocess.run(f"aws lambda create-function --function-name {function_name} "
+                   f"--zip-file fileb://{zip_file_location} "
+                   f"--handler {handler} "
+                   f"--runtime {runtime} "
+                   f"--role {role_arn}", shell=True, check=True)
+
+# ... (other functions)
+
+# Command to perform additional AWS tasks
+@click.command()
+@click.option('--function-name', prompt='Enter Lambda Function Name', required=True, show_default=True)
+@click.option('--zip-file-location', prompt='Enter Zip File Location', required=True, show_default=True)
+@click.option('--handler', prompt='Enter Lambda Handler', default='index.handler', show_default=True)
+@click.option('--runtime', prompt='Enter Lambda Runtime', default='python3.8', show_default=True)
+@click.option('--role-arn', prompt='Enter IAM Role ARN', required=True, show_default=True)
+def additional_aws_tasks(function_name, zip_file_location, handler, runtime, role_arn):
+    create_lambda_function(function_name, zip_file_location, handler, runtime, role_arn)
+    # Add other tasks as needed (e.g., update_lambda_function, list_lambda_functions, create_new_rule, etc.)
+
+# ... (other functions)
+
 if __name__ == '__main__':
     configure_aws()
+    additional_aws_tasks()
