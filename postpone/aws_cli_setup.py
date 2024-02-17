@@ -78,7 +78,11 @@ def configure_aws():
 
     # Common AWS tasks
     
-    subprocess.run(f"aws iam create-role --role-name {role_uuid} --assume-role-policy-document '{policy_string}'", shell=True)
+    role_data = subprocess.run(f"aws iam create-role --role-name {role_uuid} --assume-role-policy-document '{policy_string}'", shell=True, text=True, capture_output=True)
+    role_data_json = json.loads(role_data)
+    arn_value = role_data_json["Role"]["Arn"]
+    os.environ["ARN_VALUE"] = arn_value
+
     subprocess.run(f"aws iam attach-role-policy --role-name {role_uuid}  --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole", shell=True)
 
 # Function to create a new Lambda function
@@ -93,13 +97,15 @@ def create_lambda_function(function_name, zip_file_location, handler, runtime, r
 
 # Command to perform additional AWS tasks
 @click.command()
-@click.option('--function-name', prompt='Enter Lambda Function Name', required=True, show_default=True)
-@click.option('--zip-file-location', prompt='Enter Zip File Location', required=True, show_default=True)
-@click.option('--handler', prompt='Enter Lambda Handler', default='index.handler', show_default=True)
+@click.option('--function-name', prompt='Enter Lambda File Name', required=True, default="lambda_function", show_default=True)
+@click.option('--handler', prompt='Enter Lambda Handler', default='lambda_function.handler', show_default=True)
 @click.option('--runtime', prompt='Enter Lambda Runtime', default='python3.8', show_default=True)
-@click.option('--role-arn', prompt='Enter IAM Role ARN', required=True, show_default=True)
-def additional_aws_tasks(function_name, zip_file_location, handler, runtime, role_arn):
-    create_lambda_function(function_name, zip_file_location, handler, runtime, role_arn)
+@click.option('--role-arn', prompt='Enter IAM Role ARN', required=True, default=os.environ.get("ARN_VALUE"), show_default=True)
+@click.option('--seconds', prompt='After how many seconds do you want to run the job', required=True, default=60, show_default=True)
+def additional_aws_tasks(function_name, handler, runtime, role_arn, seconds):
+    subprocess.run(['zip', "lambda.zip", function_name], check=True)
+    create_lambda_function(function_name, "./lambda.zip", handler, runtime, role_arn)
+    subprocess.run(f"aws events put-rule --schedule-expression rate({int(seconds)} seconds) --name {""}")
     # Add other tasks as needed (e.g., update_lambda_function, list_lambda_functions, create_new_rule, etc.)
 
 # ... (other functions)
