@@ -3,7 +3,7 @@ import os
 import subprocess
 from dotenv import load_dotenv
 import json
-import policy
+import postpone.policy
 
 # Function to install AWS CLI based on OS
 def install_aws_cli():
@@ -51,7 +51,7 @@ def configure_aws():
     subprocess.run(f"aws configure set aws_secret_access_key {aws_secret_access_key}", shell=True)
     subprocess.run(f"aws configure set default.region {default_region}", shell=True)
     subprocess.run(f"aws configure set default.output {default_output}", shell=True)
-    policy_string=json.dumps(policy.policy)
+    policy_string=json.dumps(postpone.policy.policy)
 
     # Common AWS tasks
     subprocess.run("aws iam create-role --role-name lambda-ex --assume-role-policy-document"+policy_string, shell=True)
