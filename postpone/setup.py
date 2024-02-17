@@ -11,7 +11,7 @@ setup(
     ],
     entry_points='''
         [console_scripts]
-        postpone-setup=postpone.aws_cli_setup:postpone_configure
-        postpone-deploy=postpone.aws_cli_setup:postpone_deploy
+        postpone-setup=postpone.postpone_setup:postpone_setup
+        postpone-deploy=postpone.postpone_deploy:postpone_deploy
     ''',
 )
