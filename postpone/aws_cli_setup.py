@@ -18,6 +18,9 @@ def is_aws_cli_installed():
     except FileNotFoundError:
         print("AWS CLI is not installed or not found in PATH.")
         return False
+    except Exception:
+        print("Random exception",Exception)
+        return False
     
 def install_aws_cli():
     if is_aws_cli_installed():
