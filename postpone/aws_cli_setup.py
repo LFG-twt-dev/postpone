@@ -7,23 +7,6 @@ import postpone.policy  # Make sure this module and the policy attribute exist
 import uuid
 
 
-# def get_lambda_function_arn(function_name):
-#     try:
-#         # Execute the AWS CLI command to get the function details
-#         result = subprocess.run(['aws', 'lambda', 'get-function', '--function-name', function_name], 
-#                                 check=True, capture_output=True, text=True)
-
-#         # Parse the JSON output
-#         function_details = json.loads(result.stdout)
-
-#         # Extract the Function ARN
-#         function_arn = function_details['Configuration']['FunctionArn']
-
-#         return function_arn
-#     except subprocess.CalledProcessError as e:
-#         print(f"Error executing AWS CLI command: {e}")
-#         return None
-
 def is_aws_cli_installed():
     """Check if AWS CLI is installed by trying to get its version."""
     try:
@@ -76,7 +59,7 @@ def install_aws_cli():
         raise ValueError("Unsupported operating system")
 
 @click.command()
-def configure_aws():
+def postpone_configure():
     load_dotenv()
     aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
     aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
@@ -132,7 +115,7 @@ import time
 @click.option('--handler', prompt='Enter Lambda Handler', default='lambda_function.handler', show_default=True)
 @click.option('--runtime', prompt='Enter Lambda Runtime', default='python3.8', show_default=True)
 @click.option('--minutes', prompt='After how many minutes do you want to run the job', required=True, default=2, show_default=True)
-def additional_aws_tasks(file_name, handler, runtime, minutes):
+def postpone_deploy(file_name, handler, runtime, minutes):
     policy_string = json.dumps(postpone.policy.policy)
     role_uuid = str(uuid.uuid4()).replace('-','')
     role_data = subprocess.run(f"aws iam create-role --role-name {role_uuid} --assume-role-policy-document '{policy_string}'", shell=True, text=True, capture_output=True)
@@ -156,10 +139,6 @@ def additional_aws_tasks(file_name, handler, runtime, minutes):
     set_lambda_rule(function_arn,rule_name)
     time.sleep(3)
     result=setup_trigger(function_name,rule_name)
-    # select target
-    # Add other tasks as needed (e.g., update_lambda_function, list_lambda_functions, create_new_rule, etc.)
-
-# ... (other functions)
 
 if __name__ == '__main__':
-    configure_aws()
+    postpone_configure()
