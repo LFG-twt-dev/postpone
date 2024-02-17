@@ -6,6 +6,35 @@ import json
 import postpone.policy  # Make sure this module and the policy attribute exist
 import uuid
 
+
+def get_lambda_function_arn(function_name):
+    try:
+        # Execute the AWS CLI command to get the function details
+        result = subprocess.run(['aws', 'lambda', 'get-function', '--function-name', function_name], 
+                                check=True, capture_output=True, text=True)
+
+        # Parse the JSON output
+        function_details = json.loads(result.stdout)
+
+        # Extract the Function ARN
+        function_arn = function_details['Configuration']['FunctionArn']
+
+        return function_arn
+    except subprocess.CalledProcessError as e:
+        print(f"Error executing AWS CLI command: {e}")
+        return None
+
+# Function name to query
+function_name = "add"
+
+# Get the Function ARN
+function_arn = get_lambda_function_arn(function_name)
+
+if function_arn:
+    print(f"Function ARN for '{function_name}': {function_arn}")
+else:
+    print("Failed to retrieve function ARN.")
+
 def is_aws_cli_installed():
     """Check if AWS CLI is installed by trying to get its version."""
     try:
@@ -93,7 +122,44 @@ def create_lambda_function(function_name, zip_file_location, handler, runtime, r
                    f"--runtime {runtime} "
                    f"--role {role_arn}", shell=True, check=True)
 
-# ... (other functions)
+def set_lambda_rule(function_name):
+    rule_name=uuid.uuid4()
+    function_arn=get_lambda_function_arn(function_name)
+    target_details=subprocess.run(f'aws events put-targets --rule {rule_name} --targets "Id"={uuid.uuid4()},"Arn"={function_arn} --output json',capture_output=True)
+    return target_details
+
+def setup_trigger(function_name,rule_name):
+    describe_rule_command = [
+    'aws', 'events', 'describe-rule',
+    '--name', rule_name,
+    '--query', 'Arn',
+    '--output', 'text'
+    ]
+    result = subprocess.run(describe_rule_command, capture_output=True, text=True)
+    rule_arn = result.stdout.strip()
+
+    # Now, add permission to the Lambda function using the ARN from the previous step
+    add_permission_command = [
+        'aws', 'lambda', 'add-permission',
+        '--function-name', function_name,
+        '--action', 'lambda:InvokeFunction',
+        '--principal', 'events.amazonaws.com',
+        '--statement-id', str(uuid.uuid4()),
+        '--source-arn', rule_arn,
+        '--output', 'json'
+    ]
+    result = subprocess.run(add_permission_command, capture_output=True, text=True)
+
+    # Output the result or handle errors
+    if result.returncode == 0:
+        print("Permission added successfully.")
+        print(result.stdout)
+    else:
+        print("Error adding permission:")
+        print(result.stderr)
+    return result
+
+
 
 # Command to perform additional AWS tasks
 @click.command()
@@ -106,6 +172,8 @@ def additional_aws_tasks(function_name, handler, runtime, role_arn, seconds):
     subprocess.run(['zip', "lambda.zip", function_name], check=True)
     create_lambda_function(function_name, "./lambda.zip", handler, runtime, role_arn)
     subprocess.run(f"aws events put-rule --schedule-expression rate({int(seconds)} seconds) --name {uuid.uuid4()}")
+    rule_name=set_lambda_rule(function_name)
+    result=setup_trigger(function_name,rule_name)
     # select target
     # Add other tasks as needed (e.g., update_lambda_function, list_lambda_functions, create_new_rule, etc.)
 
