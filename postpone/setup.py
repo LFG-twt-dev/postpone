@@ -1,8 +1,8 @@
 from setuptools import setup, find_packages
 print(find_packages())
 setup(
-    name='aws-cli-setup',
-    version='2.5',
+    name='postpone',
+    version='1.0',
     packages=['postpone'],
     include_package_data=True,
     install_requires=[
@@ -11,6 +11,7 @@ setup(
     ],
     entry_points='''
         [console_scripts]
-        aws-cli-setup=postpone.aws_cli_setup:configure_aws
+        postpone-setup=postpone.postpone_setup:postpone_setup
+        postpone-deploy=postpone.postpone_deploy:postpone_deploy
     ''',
 )
