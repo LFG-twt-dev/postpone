@@ -105,7 +105,8 @@ def create_lambda_function(function_name, zip_file_location, handler, runtime, r
 def additional_aws_tasks(function_name, handler, runtime, role_arn, seconds):
     subprocess.run(['zip', "lambda.zip", function_name], check=True)
     create_lambda_function(function_name, "./lambda.zip", handler, runtime, role_arn)
-    subprocess.run(f"aws events put-rule --schedule-expression rate({int(seconds)} seconds) --name {""}")
+    subprocess.run(f"aws events put-rule --schedule-expression rate({int(seconds)} seconds) --name {uuid.uuid4()}")
+    # select target
     # Add other tasks as needed (e.g., update_lambda_function, list_lambda_functions, create_new_rule, etc.)
 
 # ... (other functions)
