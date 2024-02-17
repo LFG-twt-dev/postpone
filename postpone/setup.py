@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 print(find_packages())
 setup(
     name='aws-cli-setup',
-    version='2.2',
+    version='2.5',
     packages=['postpone'],
     include_package_data=True,
     install_requires=[

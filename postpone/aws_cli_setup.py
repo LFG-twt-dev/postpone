@@ -3,10 +3,28 @@ import os
 import subprocess
 from dotenv import load_dotenv
 import json
-import postpone.policy
+import postpone.policy  # Make sure this module and the policy attribute exist
+import uuid
 
-# Function to install AWS CLI based on OS
+def is_aws_cli_installed():
+    """Check if AWS CLI is installed by trying to get its version."""
+    try:
+        result = subprocess.run(["aws", "--version"], capture_output=True, text=True, check=True)
+        print(f"AWS CLI is installed. Version info:\n{result.stdout}")
+        return True
+    except subprocess.CalledProcessError as e:
+        print("AWS CLI is not installed or not found in PATH.")
+        return False
+    except FileNotFoundError:
+        print("AWS CLI is not installed or not found in PATH.")
+        return False
+    
 def install_aws_cli():
+    if is_aws_cli_installed():
+        print("AWS CLI is already installed.")
+        return
+
+    # The rest of your original installation logic here...
     if os.name == 'posix':
         os_info = os.uname()
         if os_info.sysname == 'Linux':
@@ -23,7 +41,7 @@ def install_aws_cli():
             install_cmd = "sudo installer -pkg AWSCLIV2.pkg -target /"
         else:
             raise ValueError("Unsupported POSIX system")
-        
+
         curl_cmd = f"curl '{download_url}' -o 'awscliv2.zip'"
         subprocess.run(curl_cmd, shell=True, check=True)
         subprocess.run(install_cmd, shell=True, check=True)
@@ -34,7 +52,6 @@ def install_aws_cli():
     else:
         raise ValueError("Unsupported operating system")
 
-# Command to configure AWS CLI using .env file
 @click.command()
 def configure_aws():
     load_dotenv()
@@ -42,7 +59,7 @@ def configure_aws():
     aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
     default_region = os.getenv("AWS_DEFAULT_REGION")
     default_output = os.getenv("AWS_DEFAULT_OUTPUT")
-    
+
     # Install AWS CLI
     install_aws_cli()
 
@@ -51,11 +68,13 @@ def configure_aws():
     subprocess.run(f"aws configure set aws_secret_access_key {aws_secret_access_key}", shell=True)
     subprocess.run(f"aws configure set default.region {default_region}", shell=True)
     subprocess.run(f"aws configure set default.output {default_output}", shell=True)
-    policy_string=json.dumps(postpone.policy.policy)
+    policy_string = json.dumps(postpone.policy.policy)
+    role_uuid = uuid.uuid4()
 
     # Common AWS tasks
-    subprocess.run("aws iam create-role --role-name lambda-ex --assume-role-policy-document"+policy_string, shell=True)
-    subprocess.run("aws iam attach-role-policy --role-name lambda-ex --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole", shell=True)
+    
+    subprocess.run(f"aws iam create-role --role-name {role_uuid} --assume-role-policy-document '{policy_string}'", shell=True)
+    subprocess.run(f"aws iam attach-role-policy --role-name {role_uuid}  --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole", shell=True)
 
 if __name__ == '__main__':
     configure_aws()
